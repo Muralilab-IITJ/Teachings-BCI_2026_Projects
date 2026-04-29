@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attention Seeker — Research-Grade BCI Game</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+:root{
+  --bg:#050a14;--cyan:#00e5ff;--green:#00ff41;--yellow:#ffff00;
+  --red:#ff2244;--purple:#cc44ff;--orange:#ff8800;--white:#e8f4ff;--dim:#3a5a7a;
+  --panel:#070f1e;
+}
+*{box-sizing:border-box;margin:0;padding:0;image-rendering:pixelated;}
+body{background:var(--bg);color:var(--white);font-family:'Press Start 2P',monospace;overflow:hidden;height:100vh;width:100vw;cursor:crosshair;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px);pointer-events:none;z-index:999;}
+canvas{position:fixed;top:0;left:0;display:block;}
+#starfield{z-index:0;}
+#gameCanvas{z-index:1;}
+
+.screen{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;transition:opacity .2s;overflow:hidden;}
+.screen.hidden{opacity:0;pointer-events:none;}
+.hidden{display:none !important;}
+
+/* ── LANDING ── */
+#landingScreen{background:linear-gradient(180deg,#020810 0%,#050a14 100%);}
+.logo-tag{font-family:'VT323',monospace;font-size:26px;color:var(--green);letter-spacing:5px;}
+.logo-main{font-size:clamp(16px,2.6vw,28px);color:var(--yellow);text-shadow:4px 4px 0 #a07000;letter-spacing:2px;line-height:1.5;text-align:center;}
+.logo-ver{font-family:'VT323',monospace;font-size:19px;color:var(--cyan);letter-spacing:3px;}
+
+.px-panel{background:var(--panel);border:3px solid var(--cyan);box-shadow:4px 4px 0 #003344;padding:14px 18px;width:min(500px,92vw);}
+.ptitle{font-size:9px;color:var(--green);letter-spacing:2px;margin-bottom:10px;}
+.ctrl-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-family:'VT323',monospace;font-size:19px;color:rgba(200,230,255,.85);}
+.px-badge{font-family:'Press Start 2P',monospace;font-size:7px;padding:5px 8px;border:2px solid;flex-shrink:0;min-width:80px;text-align:center;}
+.px-badge.c{border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.1);}
+.px-badge.l{border-color:var(--red);color:var(--red);background:rgba(255,34,68,.1);}
+.px-badge.r{border-color:var(--purple);color:var(--purple);background:rgba(204,68,255,.1);}
+.px-badge.g{border-color:var(--green);color:var(--green);background:rgba(0,255,65,.1);}
+
+.rec-info{background:rgba(0,255,65,.08);border:2px solid var(--green);padding:8px 14px;display:flex;align-items:center;gap:10px;font-family:'VT323',monospace;font-size:14px;color:var(--green);}
+.rec-dot{width:8px;height:8px;background:var(--green);animation:blink .6s step-end infinite;}
+@keyframes blink{50%{opacity:0;}}
+
+#bleStatus{font-family:'VT323',monospace;font-size:17px;color:var(--dim);text-align:center;}
+#bleStatus.ok{color:var(--green);}#bleStatus.err{color:var(--red);}
+
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.px-btn{font-family:'Press Start 2P',monospace;font-size:9px;padding:12px 18px;border:3px solid var(--cyan);background:#001a2a;color:var(--cyan);cursor:pointer;box-shadow:4px 4px 0 #003344;text-transform:uppercase;letter-spacing:1px;}
+.px-btn:hover{background:var(--cyan);color:#000;transform:translate(-2px,-2px);box-shadow:6px 6px 0 #003344;}
+.px-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #003344;}
+.px-btn.yellow{border-color:var(--yellow);color:var(--yellow);background:#1a1400;box-shadow:4px 4px 0 #443300;}
+.px-btn.yellow:hover{background:var(--yellow);color:#000;}
+.px-btn.ghost{border-color:var(--dim);color:var(--dim);background:transparent;box-shadow:3px 3px 0 #0a1a2a;font-size:6px;}
+.px-btn.ghost:hover{border-color:var(--cyan);color:var(--cyan);}
+.px-btn.green{border-color:var(--green);color:var(--green);background:#001a08;box-shadow:4px 4px 0 #003300;}
+.px-btn.green:hover{background:var(--green);color:#000;}
+.px-btn.red{border-color:var(--red);color:var(--red);background:#1a0008;box-shadow:4px 4px 0 #440011;}
+.px-btn.red:hover{background:var(--red);color:#fff;}
+
+/* ── PARTICIPANT ── */
+#participantScreen{background:linear-gradient(180deg,#020810 0%,#050a14 100%);}
+.form-title{font-size:11px;color:var(--yellow);text-shadow:3px 3px 0 #554400;text-align:center;}
+.form-sub{font-family:'VT323',monospace;font-size:15px;color:var(--cyan);letter-spacing:3px;text-align:center;}
+.px-form{background:var(--panel);border:3px solid var(--yellow);box-shadow:4px 4px 0 #443300;padding:18px 22px;width:min(490px,92vw);}
+.field-row{display:flex;flex-direction:column;gap:4px;margin-bottom:11px;}
+.field-row label{font-size:6px;color:var(--green);letter-spacing:2px;}
+.px-input{font-family:'VT323',monospace;font-size:17px;background:#000d1a;border:2px solid var(--cyan);color:var(--white);padding:7px 9px;outline:none;width:100%;}
+.px-input:focus{border-color:var(--yellow);}
+.px-select{font-family:'VT323',monospace;font-size:17px;background:#000d1a;border:2px solid var(--cyan);color:var(--white);padding:7px 9px;outline:none;width:100%;cursor:pointer;}
+.field-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* ── CALIBRATION ── */
+#calibScreen{background:rgba(5,10,20,.97);}
+.calib-title{font-size:clamp(11px,2vw,16px);color:var(--green);text-shadow:3px 3px 0 #003300;letter-spacing:3px;}
+.calib-sub{font-family:'VT323',monospace;font-size:19px;color:var(--dim);letter-spacing:3px;}
+.phase-dots{display:flex;gap:10px;justify-content:center;}
+.phase-dot{width:12px;height:12px;border:2px solid var(--dim);background:transparent;}
+.phase-dot.active{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:blink .5s step-end infinite;}
+.phase-dot.done{background:var(--green);border-color:var(--green);}
+.calib-box{background:var(--panel);border:3px solid var(--cyan);box-shadow:4px 4px 0 #003344;padding:20px 26px;width:min(480px,92vw);text-align:center;}
+.calib-icon{font-size:44px;margin-bottom:8px;image-rendering:auto;}
+.calib-phase-title{font-size:10px;color:var(--yellow);text-shadow:2px 2px 0 #554400;margin-bottom:7px;}
+.calib-instruction{font-family:'VT323',monospace;font-size:17px;line-height:1.7;color:rgba(200,230,255,.85);margin-bottom:12px;white-space:pre-line;}
+.countdown-wrap{display:inline-block;position:relative;width:68px;height:68px;margin-bottom:10px;}
+.countdown-ring{transform:rotate(-90deg);}
+.countdown-ring circle{transition:stroke-dashoffset .1s linear;}
+.countdown-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--cyan);text-shadow:2px 2px 0 #003344;}
+.signal-bars{display:flex;gap:14px;justify-content:center;margin-bottom:10px;align-items:flex-end;height:48px;}
+.sig-col{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.sig-col label{font-family:'VT323',monospace;font-size:11px;color:var(--dim);}
+.px-bar{width:20px;background:var(--cyan);min-height:3px;transition:height .06s;}
+.px-bar.l{background:var(--red);}
+.px-bar.r{background:var(--purple);}
+.px-progbar{height:9px;background:#0a1a2a;border:2px solid var(--cyan);margin-bottom:5px;overflow:hidden;}
+.px-progfill{height:100%;background:repeating-linear-gradient(90deg,var(--green) 0,var(--green) 8px,#00aa22 8px,#00aa22 10px);transition:width .1s linear;}
+.calib-result{margin-top:10px;}
+.result-pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px;}
+.result-pill{font-size:6px;padding:5px 9px;border:2px solid;background:rgba(0,0,0,.4);}
+.result-pill.c{border-color:var(--cyan);color:var(--cyan);}
+.result-pill.l{border-color:var(--red);color:var(--red);}
+.result-pill.r{border-color:var(--purple);color:var(--purple);}
+
+/* ── HUD ── */
+#hud{position:fixed;z-index:10;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:7px 10px;pointer-events:none;}
+#hud.hidden{display:none;}
+.hud-panel{background:rgba(5,10,20,.92);border:2px solid var(--cyan);box-shadow:3px 3px 0 #001a2a;padding:6px 10px;min-width:115px;}
+.h-label{font-size:7px;letter-spacing:2px;color:var(--dim);margin-bottom:2px;}
+.h-val{font-size:18px;color:var(--cyan);line-height:1;text-shadow:2px 2px 0 #003344;}
+.h-val.ok{color:var(--green);}
+.hud-bar-row{display:flex;align-items:center;gap:4px;margin-top:3px;}
+.hud-bar-label{font-size:5px;color:var(--dim);width:8px;}
+.hud-bar-track{flex:1;height:5px;background:#0a1a2a;border:1px solid var(--dim);position:relative;}
+.hud-bar-fill{height:100%;transition:width .08s;}
+.hud-bar-fill.c{background:var(--cyan);}
+.hud-bar-fill.l{background:var(--red);}
+.hud-bar-fill.r{background:var(--purple);}
+.hud-bar-thresh{position:absolute;top:-2px;width:2px;height:9px;background:#fff;}
+#hudCenter{text-align:center;}
+.h-score{font-size:22px;color:var(--yellow);text-shadow:3px 3px 0 #443300;}
+.h-level{font-size:8px;color:var(--green);margin-top:2px;letter-spacing:2px;}
+.lives-row{display:flex;gap:3px;justify-content:center;margin-top:3px;}
+.life-px{width:9px;height:9px;background:var(--red);box-shadow:1px 1px 0 #550011;}
+.life-px.gone{background:#1a0008;box-shadow:none;border:1px solid #330011;}
+.hud-rec{display:flex;align-items:center;gap:4px;margin-top:4px;}
+.rec-dot-hud{width:6px;height:6px;background:var(--red);animation:blink .6s step-end infinite;}
+.rec-text{font-size:7px;color:var(--red);letter-spacing:1px;}
+#gameControls{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:10px;pointer-events:auto;}
+#gameControls.hidden{display:none;}
+
+#flash{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;background:rgba(0,229,255,.07);transition:opacity .04s;}
+#notif{position:fixed;top:65px;left:50%;transform:translateX(-50%);z-index:15;font-size:11px;letter-spacing:3px;pointer-events:none;opacity:0;transition:opacity .25s;text-shadow:3px 3px 0 rgba(0,0,0,.8);white-space:nowrap;}
+
+/* ── GAME OVER / RESULTS ── */
+#gameOverScreen{background:rgba(5,10,20,.97);}
+.go-title{font-size:clamp(14px,2.5vw,26px);color:var(--red);text-shadow:4px 4px 0 #440011;letter-spacing:4px;animation:blink .8s step-end infinite;}
+.go-score{font-size:clamp(28px,4.5vw,48px);color:var(--yellow);text-shadow:4px 4px 0 #443300;}
+.go-label{font-size:7px;color:var(--dim);letter-spacing:3px;}
+.stats-box{background:var(--panel);border:3px solid var(--green);box-shadow:4px 4px 0 #003300;padding:12px 18px;width:min(480px,92vw);}
+.stats-title{font-size:7px;color:var(--green);letter-spacing:2px;margin-bottom:8px;text-shadow:2px 2px 0 #003300;}
+.stat-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #0a1a2a;font-family:'VT323',monospace;font-size:14px;}
+.stat-row:last-child{border-bottom:none;}
+.stat-key{color:var(--dim);}
+
+/* ── SIGNAL VIEWER ── */
+#signalScreen{background:rgba(3,6,14,.98);overflow-y:auto;justify-content:flex-start;padding:12px 16px 20px;}
+.sig-title{font-size:9px;color:var(--green);text-shadow:2px 2px 0 #003300;letter-spacing:2px;margin-top:8px;}
+.sig-sub{font-family:'VT323',monospace;font-size:14px;color:var(--dim);letter-spacing:2px;margin-bottom:8px;}
+.chart-card{background:var(--panel);border:3px solid var(--cyan);box-shadow:4px 4px 0 #003344;padding:10px 12px;width:min(960px,98vw);}
+.chart-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;}
+.chart-title-sm{font-size:7px;color:var(--cyan);letter-spacing:2px;}
+.legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.leg-item{display:flex;align-items:center;gap:5px;font-family:'VT323',monospace;font-size:14px;}
+.leg-dot{width:8px;height:8px;flex-shrink:0;}
+#signalCanvas{display:block;width:100%;border:1px solid var(--dim);image-rendering:pixelated;}
+.chart-axis{display:flex;justify-content:space-between;font-family:'VT323',monospace;font-size:11px;color:var(--dim);margin-top:2px;padding:0 2px;}
+.meta-strip{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-family:'VT323',monospace;font-size:13px;color:rgba(200,230,255,.6);}
+.meta-val{color:var(--white);}
+.meta-val.c{color:var(--cyan);}
+.meta-val.g{color:var(--green);}
+.meta-val.y{color:var(--yellow);}
+.event-legend{display:flex;gap:12px;flex-wrap:wrap;font-family:'VT323',monospace;font-size:12px;color:var(--dim);}
+.ev-item{display:flex;align-items:center;gap:5px;}
+.ev-line{width:18px;height:2px;}
+</style>
+</head>
+<body>
+<canvas id="starfield"></canvas>
+<canvas id="gameCanvas"></canvas>
+<div id="flash"></div>
+<div id="notif"></div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div class="hud-panel">
+    <div class="h-label">TBR (θ/β)</div>
+    <div id="hBeta" class="h-val">–</div>
+    <div class="hud-bar-row">
+      <span class="hud-bar-label" style="color:var(--cyan)">β</span>
+      <div class="hud-bar-track"><div class="hud-bar-fill c" id="adaptFillC" style="width:0%"></div><div class="hud-bar-thresh" id="adaptThreshC" style="left:30%"></div></div>
+    </div>
+    <div style="font-size:7px;color:var(--green);margin-top:2px;letter-spacing:1px;">TBR↓ = FOCUS</div>
+  </div>
+  <div class="hud-panel" id="hudCenter">
+    <div class="h-label">SCORE</div>
+    <div class="h-score" id="hScore">000000</div>
+    <div class="h-level" id="hLevel">LEVEL 1</div>
+    <div class="lives-row" id="hLives"></div>
+    <div class="hud-rec"><div class="rec-dot-hud"></div><div class="rec-text">RECORDING</div></div>
+  </div>
+  <div class="hud-panel">
+    <div class="h-label">EMG</div>
+    <div class="hud-bar-row">
+      <span class="hud-bar-label" style="color:var(--red)">L</span>
+      <div class="hud-bar-track"><div class="hud-bar-fill l" id="adaptFillL" style="width:0%"></div><div class="hud-bar-thresh" id="adaptThreshL" style="left:40%"></div></div>
+    </div>
+    <div class="hud-bar-row">
+      <span class="hud-bar-label" style="color:var(--purple)">R</span>
+      <div class="hud-bar-track"><div class="hud-bar-fill r" id="adaptFillR" style="width:0%"></div><div class="hud-bar-thresh" id="adaptThreshR" style="left:40%"></div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:2px;">
+      <span id="hL" style="font-size:7px;color:var(--red)">L:--</span>
+      <span id="hR" style="font-size:7px;color:var(--purple)">R:--</span>
+    </div>
+  </div>
+</div>
+
+<!-- LANDING SCREEN -->
+<div class="screen" id="landingScreen">
+  <div class="logo-tag">&gt;&gt; NEUROFEEDBACK BCI &lt;&lt;</div>
+  <div class="logo-main">ATTENTION SEEKER</div>
+  <div class="logo-ver">EEG + EMG · NPG LITE · RESEARCH-GRADE</div>
+
+  <div class="px-panel">
+    <div class="ptitle">[ CONTROLS ]</div>
+    <div class="ctrl-row"><span class="px-badge c">🧠 FOCUS</span>TBR below threshold (θ↓ β↑) → fire lasers</div>
+    <div class="ctrl-row"><span class="px-badge l">LEFT ARM</span>Flex left hand → move ship left</div>
+    <div class="ctrl-row"><span class="px-badge r">RIGHT ARM</span>Flex right hand → move ship right</div>
+    <div class="ctrl-row"><span class="px-badge g">UFO SHIPS</span>Enemy attackers — destroy with focus!</div>
+  </div>
+
+  <div class="px-panel" style="margin-top:5px;">
+    <div class="ptitle">[ ELECTRODE PLACEMENT ]</div>
+    <div style="font-family:'VT323',monospace;font-size:12px;color:var(--cyan);">
+      EEG: Forehead (Fp1, left side, 2-3cm above left eyebrow)<br>
+      REF: Behind left ear (mastoid bone)<br>
+      EMG L: Left forearm (finger extensor muscles, top side)<br>
+      EMG R: Right forearm (finger extensor muscles, top side)
+    </div>
+  </div>
+
+  <div class="rec-info">
+    <div class="rec-dot"></div>
+    RAW SIGNAL RECORDED EVERY 50ms · EXPORT CSV AFTER GAME
+  </div>
+
+  <div id="bleStatus">⚡ NPG Lite not connected — click CONNECT BLE</div>
+  <div class="btn-row">
+    <button class="px-btn" id="connectBtn" onclick="connectBLE()">🔌 CONNECT BLE</button>
+    <button class="px-btn red hidden" id="disconnectBtn" onclick="disconnectBLE()">DISCONNECT</button>
+    <button class="px-btn yellow" onclick="showParticipant()">▶ START</button>
+  </div>
+  
+</div>
+
+<div id="gameControls" class="hidden">
+  <button class="px-btn ghost" id="stopGameBtn" onclick="stopGame()">STOP GAME</button>
+</div>
+
+<!-- PARTICIPANT SCREEN -->
+<div class="screen hidden" id="participantScreen">
+  <div class="form-title">PARTICIPANT INFO</div>
+  <div class="form-sub">&gt; LOGGED WITH SIGNAL RECORDING &lt;</div>
+  <div class="px-form">
+    <div class="field-row"><label>PARTICIPANT ID / NAME</label><input class="px-input" id="fName" placeholder="e.g. P001 or John Doe" maxlength="40"></div>
+    <div class="field-2col">
+      <div class="field-row"><label>AGE</label><input class="px-input" id="fAge" type="number" placeholder="24" min="5" max="99"></div>
+      <div class="field-row"><label>GENDER</label><select class="px-select" id="fGender"><option value="">—</option><option value="M">MALE</option><option value="F">FEMALE</option><option value="NB">NON-BINARY</option><option value="O">OTHER</option><option value="N/A">PREFER NOT</option></select></div>
+    </div>
+    <div class="field-2col">
+      <div class="field-row"><label>HANDEDNESS</label><select class="px-select" id="fHand"><option value="">—</option><option value="R">RIGHT</option><option value="L">LEFT</option><option value="A">AMBIDEXTROUS</option></select></div>
+      <div class="field-row"><label>TRIAL #</label><input class="px-input" id="fTrial" type="number" value="1" min="1" max="99"></div>
+    </div>
+    <div class="field-row"><label>NOTES</label><input class="px-input" id="fNotes" placeholder="fatigue, conditions, medication..." maxlength="100"></div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="px-btn yellow" onclick="submitParticipant()">▶ CALIBRATE &amp; PLAY</button>
+      <button class="px-btn ghost" onclick="showLanding()">◀ BACK</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALIBRATION SCREEN -->
+<div class="screen hidden" id="calibScreen">
+  <div class="calib-title">[ CALIBRATION ]</div>
+  <div class="calib-sub">LEARNING YOUR NEURAL SIGNATURE</div>
+  <div class="phase-dots" id="phaseDots"></div>
+  <div class="calib-box">
+    <div class="calib-icon" id="calibIcon">😌</div>
+    <div class="calib-phase-title" id="calibPhaseTitle">PREPARING...</div>
+    <div class="calib-instruction" id="calibInstruction">Getting ready...</div>
+    <div class="signal-bars">
+      <div class="sig-col"><div class="px-bar" id="cvEEG" style="height:3px"></div><label>θ PWR</label></div>
+      <div class="sig-col"><div class="px-bar" style="background:var(--green);height:3px" id="cvBeta"></div><label>β PWR</label></div>
+      <div class="sig-col"><div class="px-bar" style="background:var(--yellow);height:3px" id="cvTBR"></div><label>TBR</label></div>
+      <div class="sig-col"><div class="px-bar l" id="cvEMGL" style="height:3px"></div><label>EMG L</label></div>
+      <div class="sig-col"><div class="px-bar r" id="cvEMGR" style="height:3px"></div><label>EMG R</label></div>
+    </div>
+    <div class="countdown-wrap">
+      <svg class="countdown-ring" width="68" height="68" viewBox="0 0 68 68">
+        <circle cx="34" cy="34" r="28" fill="none" stroke="rgba(0,229,255,.12)" stroke-width="5"/>
+        <circle id="calibRing" cx="34" cy="34" r="28" fill="none" stroke="var(--cyan)" stroke-width="5" stroke-dasharray="175.9" stroke-dashoffset="0" stroke-linecap="square"/>
+      </svg>
+      <div class="countdown-num" id="calibNum">–</div>
+    </div>
+    <div class="px-progbar"><div class="px-progfill" id="calibProg" style="width:0%"></div></div>
+    <div style="font-family:'VT323',monospace;font-size:11px;color:var(--dim);letter-spacing:2px;margin-top:3px;" id="calibProgLabel">WAITING</div>
+    <div class="calib-result hidden" id="calibResult">
+      <div style="font-family:'VT323',monospace;font-size:15px;color:var(--green);margin-bottom:6px;">&gt; THRESHOLDS LOCKED &lt;</div>
+      <div class="result-pills">
+        <div class="result-pill c" id="rBeta">TBR —</div>
+        <div class="result-pill l" id="rEMGL">L —</div>
+        <div class="result-pill r" id="rEMGR">R —</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME OVER SCREEN -->
+<div class="screen hidden" id="gameOverScreen">
+  <div class="go-title">GAME OVER</div>
+  <div class="go-label">FINAL SCORE</div>
+  <div class="go-score" id="goScore">0</div>
+  <div class="stats-box">
+    <div class="stats-title">[ SESSION RESULTS ]</div>
+    <div class="stat-row"><span class="stat-key">Participant</span><span style="color:var(--yellow)" id="goName">—</span></div>
+    <div class="stat-row"><span class="stat-key">Duration</span><span style="color:var(--green)" id="goDur">—</span></div>
+    <div class="stat-row"><span class="stat-key">Level reached</span><span style="color:var(--yellow)" id="goLevel">—</span></div>
+    <div class="stat-row"><span class="stat-key">Enemies destroyed</span><span style="color:var(--cyan)" id="goKills">—</span></div>
+    <div class="stat-row"><span class="stat-key">Focus ratio (avg/thresh)</span><span style="color:var(--dim)" id="goFocusRatioRaw">—</span></div>
+    <div class="stat-row"><span class="stat-key">Avg TBR (game)</span><span style="color:var(--cyan)" id="goAvgBeta">—</span></div>
+    <div class="stat-row"><span class="stat-key">TBR threshold (final)</span><span style="color:var(--cyan)" id="goTBeta">—</span></div>
+    <div class="stat-row"><span class="stat-key">EMG L / R (final)</span><span style="color:var(--red)" id="goTLR">—</span></div>
+    <div class="stat-row"><span class="stat-key">Adapt events</span><span style="color:var(--green)" id="goAdapt">—</span></div>
+    <div class="stat-row"><span class="stat-key">Signal samples recorded</span><span style="color:var(--green)" id="goSamples">—</span></div>
+  </div>
+  <div class="btn-row">
+    <button class="px-btn green" onclick="showSignalViewer()">📊 VIEW SIGNAL</button>
+    <button class="px-btn yellow" onclick="exportCSV()">💾 EXPORT CSV</button>
+    <button class="px-btn" onclick="restartGame()">PLAY AGAIN</button>
+    <button class="px-btn ghost" onclick="showLanding()">MENU</button>
+  </div>
+</div>
+
+<!-- SIGNAL VIEWER SCREEN -->
+<div class="screen hidden" id="signalScreen">
+  <div style="width:min(960px,98vw);display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;overflow-y:auto;padding:10px 0 8px;">
+    <div style="text-align:center;">
+      <div class="sig-title">[ BIO-SIGNAL RECORDING ]</div>
+      <div class="sig-sub">RAW DATA PROOF · <span id="sigSubInfo">—</span></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-topbar">
+        <div class="chart-title-sm">EEG β-POWER + EMG L/R — FULL GAME SESSION</div>
+        <div class="legend">
+          <div class="leg-item"><div class="leg-dot" style="background:var(--cyan)"></div><span style="color:var(--cyan)">TBR</span></div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div><span style="color:var(--red)">EMG L</span></div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--purple)"></div><span style="color:var(--purple)">EMG R</span></div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--yellow);opacity:.6"></div><span style="color:var(--yellow)">TBR thresh</span></div>
+        </div>
+      </div>
+      <canvas id="signalCanvas" width="880" height="200" style="width:100%;display:block;border:1px solid var(--dim);"></canvas>
+      <div class="chart-axis" id="chartAxis"><span id="axL">0s</span><span id="axM">—</span><span id="axR">—</span></div>
+      <div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+        <div class="event-legend">
+          <div class="ev-item"><div class="ev-line" style="background:rgba(0,229,255,.2);height:8px;width:14px;"></div><span>Focus active</span></div>
+          <div class="ev-item"><div class="ev-line" style="background:rgba(255,34,68,.4);"></div><span>L flex</span></div>
+          <div class="ev-item"><div class="ev-line" style="background:rgba(204,68,255,.4);"></div><span>R flex</span></div>
+        </div>
+        <div class="event-legend" id="sigStats"></div>
+      </div>
+    </div>
+    <div class="meta-strip" id="metaStrip"></div>
+  </div>
+  <div class="btn-row" style="flex-shrink:0;padding:10px 0 14px;width:100%;justify-content:center;border-top:2px solid rgba(0,229,255,0.2);background:rgba(3,6,14,0.97);">
+    <button class="px-btn yellow" onclick="exportCSV()">💾 EXPORT CSV</button>
+    <button class="px-btn" onclick="showScreen('gameOverScreen')">◀ BACK</button>
+    <button class="px-btn ghost" onclick="showLanding()">MAIN MENU</button>
+  </div>
+</div>
+
+<script>
+const SAMPLE_RATE = 500;
+const FFT_SIZE = 256;
+const FREQ_RES = SAMPLE_RATE / FFT_SIZE;
+const EEG_BUF_LEN = 512;
+
+const BANDS = {
+  delta: [0.5, 4],
+  theta: [4, 8],
+  alpha: [8, 13],
+  beta:  [12, 20],
+  gamma: [20, 45]
+};
+
+let eegBuf = new Float32Array(EEG_BUF_LEN);
+let eegIdx = 0;
+let emgEnvL = 0, emgEnvR = 0;
+let betaPower = 0;
+
+let emgBaselineL = 150;
+let emgBaselineR = 150;
+const EMG_BASELINE_ALPHA = 0.02;
+
+let lastMovementTime = 0;
+let restAccumulatorL = 0;
+let restAccumulatorR = 0;
+let restSampleCount = 0;
+const REST_DETECTION_TIME = 2000;
+const REST_BASELINE_ALPHA = 0.05;
+
+window.isRestPeriod  = false;
+window.crossTalkActive = false;
+
+let smoothBands = { delta:0, theta:0, alpha:0, beta:0, gamma:0 };
+
+const TBR_EPSILON = 1e-6;
+let tbrValue = 2.0;
+let tbrSmooth = 2.0;
+const TBR_SMOOTH_ALPHA = 0.15;
+let blinkRejectedLastWindow = false;
+function notchFilter(input) {
+  let x = input - (-1.56858163 * nz1_s1) - (0.96424138 * nz2_s1);
+  let y = 0.96508099 * x + (-1.56202714) * nz1_s1 + 0.96508099 * nz2_s1;
+  nz2_s1 = nz1_s1; nz1_s1 = x;
+  x = y - (-1.61100358 * nz1_s2) - (0.96592171 * nz2_s2);
+  y = 1.0 * x + (-1.61854514) * nz1_s2 + 1.0 * nz2_s2;
+  nz2_s2 = nz1_s2; nz1_s2 = x;
+  return y;
+}
+
+let emgLNz1_s1=0,emgLNz2_s1=0,emgLNz1_s2=0,emgLNz2_s2=0;
+function notchFilterEMGL(input) {
+  let x = input - (-1.56858163 * emgLNz1_s1) - (0.96424138 * emgLNz2_s1);
+  let y = 0.96508099 * x + (-1.56202714) * emgLNz1_s1 + 0.96508099 * emgLNz2_s1;
+  emgLNz2_s1 = emgLNz1_s1; emgLNz1_s1 = x;
+  x = y - (-1.61100358 * emgLNz1_s2) - (0.96592171 * emgLNz2_s2);
+  y = 1.0 * x + (-1.61854514) * emgLNz1_s2 + 1.0 * emgLNz2_s2;
+  emgLNz2_s2 = emgLNz1_s2; emgLNz1_s2 = x;
+  return y;
+}
+
+let emgRNz1_s1=0,emgRNz2_s1=0,emgRNz1_s2=0,emgRNz2_s2=0;
+function notchFilterEMGR(input) {
+  let x = input - (-1.56858163 * emgRNz1_s1) - (0.96424138 * emgRNz2_s1);
+  let y = 0.96508099 * x + (-1.56202714) * emgRNz1_s1 + 0.96508099 * emgRNz2_s1;
+  emgRNz2_s1 = emgRNz1_s1; emgRNz1_s1 = x;
+  x = y - (-1.61100358 * emgRNz1_s2) - (0.96592171 * emgRNz2_s2);
+  y = 1.0 * x + (-1.61854514) * emgRNz1_s2 + 1.0 * emgRNz2_s2;
+  emgRNz2_s2 = emgRNz1_s2; emgRNz1_s2 = x;
+  return y;
+}
+
+let lz1=0, lz2=0, lx1=0;
+function eegLowPass(input) {
+  const x = input - (-1.22465158 * lz1) - (0.45044543 * lz2);
+  const y = 0.05644846 * x + 0.11289692 * lz1 + 0.05644846 * lz2;
+  lz2 = lz1; lz1 = x;
+  return y;
+}
+
+let hpEEGprev_x = 0, hpEEGprev_y = 0;
+function eegHighPass(input) {
+  const alpha = 0.9938;
+  const output = alpha * (hpEEGprev_y + input - hpEEGprev_x);
+  hpEEGprev_x = input;
+  hpEEGprev_y = output;
+  return output;
+}
+
+let hpLz1=0, hpLz2=0;
+let hpRz1=0, hpRz2=0;
+function emgHighPassL(input) {
+  const x = input - (-0.82523238 * hpLz1) - (0.29463653 * hpLz2);
+  const y = 0.52996723 * x + (-1.05993445) * hpLz1 + 0.52996723 * hpLz2;
+  hpLz2 = hpLz1; hpLz1 = x;
+  return y;
+}
+function emgHighPassR(input) {
+  const x = input - (-0.82523238 * hpRz1) - (0.29463653 * hpRz2);
+  const y = 0.52996723 * x + (-1.05993445) * hpRz1 + 0.52996723 * hpRz2;
+  hpRz2 = hpRz1; hpRz1 = x;
+  return y;
+}
+
+const ENV_BUF = 16;
+const envBufL = new Float32Array(ENV_BUF);
+const envBufR = new Float32Array(ENV_BUF);
+let envIdxL = 0, envSumL = 0;
+let envIdxR = 0, envSumR = 0;
+function envelopeL(absVal) {
+  envSumL -= envBufL[envIdxL];
+  envSumL += absVal;
+  envBufL[envIdxL] = absVal;
+  envIdxL = (envIdxL + 1) % ENV_BUF;
+  return envSumL / ENV_BUF;
+}
+function envelopeR(absVal) {
+  envSumR -= envBufR[envIdxR];
+  envSumR += absVal;
+  envBufR[envIdxR] = absVal;
+  envIdxR = (envIdxR + 1) % ENV_BUF;
+  return envSumR / ENV_BUF;
+}
+
+const SMOOTH_LEN = 128;
+const smoothBufs = {};
+const smoothSums = {};
+let smoothIdx = 0;
+['delta','theta','alpha','beta','gamma'].forEach(b => {
+  smoothBufs[b] = new Array(SMOOTH_LEN).fill(0);
+  smoothSums[b] = 0;
+});
+function updateSmoother(bandVals) {
+  for (const b in bandVals) {
+    smoothSums[b] -= smoothBufs[b][smoothIdx];
+    smoothSums[b] += bandVals[b];
+    smoothBufs[b][smoothIdx] = bandVals[b];
+  }
+  smoothIdx = (smoothIdx + 1) % SMOOTH_LEN;
+  for (const b in bandVals) smoothBands[b] = smoothSums[b] / SMOOTH_LEN;
+}
+function resetSmoother() {
+  for (const b of ['delta','theta','alpha','beta','gamma']) {
+    smoothBufs[b].fill(0);
+    smoothSums[b] = 0;
+  }
+  smoothIdx = 0;
+}
+
+function bandPower(mags, lo, hi) {
+  const s = Math.max(1, Math.floor(lo / FREQ_RES));
+  const e = Math.min(Math.floor(hi / FREQ_RES), mags.length - 1);
+  let p = 0;
+  for (let i = s; i <= e; i++) p += mags[i] * mags[i];
+  return p;
+}
+
+function computeFFT() {
+  const N = FFT_SIZE;
+  const real = new Float32Array(N);
+  const imag = new Float32Array(N);
+
+  for (let i = 0; i < N; i++) {
+    const sample = eegBuf[(eegIdx - N + i + EEG_BUF_LEN) % EEG_BUF_LEN];
+    real[i] = sample * 0.5 * (1 - Math.cos(2 * Math.PI * i / (N - 1)));
+  }
+
+  let peakAmp = 0;
+  for (let i = 0; i < N; i++) {
+    const s = Math.abs(eegBuf[(eegIdx - N + i + EEG_BUF_LEN) % EEG_BUF_LEN]);
+    if (s > peakAmp) peakAmp = s;
+  }
+  if (peakAmp > 0.55) { blinkRejectedLastWindow = true; return; }
+  blinkRejectedLastWindow = false;
+
+  let j = 0;
+  for (let i = 0; i < N - 1; i++) {
+    if (i < j) {
+      [real[i], real[j]] = [real[j], real[i]];
+      [imag[i], imag[j]] = [imag[j], imag[i]];
+    }
+    let k = N >> 1;
+    while (k <= j) { j -= k; k >>= 1; }
+    j += k;
+  }
+
+  for (let l = 2; l <= N; l <<= 1) {
+    const half = l >> 1;
+    for (let k = 0; k < half; k++) {
+      const angle = -2 * Math.PI * k / l;
+      const c = Math.cos(angle), s = Math.sin(angle);
+      for (let i = k; i < N; i += l) {
+        const i2 = i + half;
+        const tr = c * real[i2] - s * imag[i2];
+        const ti = c * imag[i2] + s * real[i2];
+        real[i2] = real[i] - tr;
+        imag[i2] = imag[i] - ti;
+        real[i] += tr;
+        imag[i] += ti;
+      }
+    }
+  }
+
+  const mags = new Float32Array(N / 2);
+  for (let i = 0; i < N / 2; i++) {
+    mags[i] = Math.sqrt(real[i] * real[i] + imag[i] * imag[i]) / (N / 2);
+  }
+
+  const raw = {};
+  let total = 0;
+  for (const [b, [lo, hi]] of Object.entries(BANDS)) {
+    raw[b] = bandPower(mags, lo, hi);
+    total += raw[b];
+  }
+
+  if (total <= 0) return;
+
+  if (raw.delta > raw.theta * 3.0) { blinkRejectedLastWindow = true; return; }
+
+  const rel = {};
+  for (const b in raw) rel[b] = raw[b] / total;
+  updateSmoother(rel);
+
+  const rawTBR = raw.theta / (raw.beta + TBR_EPSILON);
+  const clampedTBR = Math.max(0.1, Math.min(10.0, rawTBR));
+  tbrSmooth = TBR_SMOOTH_ALPHA * clampedTBR + (1 - TBR_SMOOTH_ALPHA) * tbrSmooth;
+  tbrValue = tbrSmooth;
+
+  betaPower = Math.round(smoothBands.beta * 100);
+}
+
+let sampleCounter = 0;
+let bleDevice = null, dataChar = null, ctrlChar = null, bleConnected = false;
+let gameEndReason = 'game_over';
+
+function updateConnectionUI() {
+  const st = document.getElementById('bleStatus');
+  const connectBtn = document.getElementById('connectBtn');
+  const disconnectBtn = document.getElementById('disconnectBtn');
+
+  if (bleConnected) {
+    st.textContent = `CONNECTED: ${bleDevice?.name || 'NPG Lite'}`;
+    st.className = 'ok';
+    connectBtn.textContent = 'CONNECTED';
+    disconnectBtn.classList.remove('hidden');
+  } else {
+    st.textContent = 'NPG Lite not connected - click CONNECT BLE';
+    st.className = '';
+    connectBtn.textContent = 'CONNECT BLE';
+    disconnectBtn.classList.add('hidden');
+  }
+}
+
+function parseBLE(dv) {
+  const SAMPLE_LEN = 7;
+  const numSamples = Math.floor(dv.byteLength / SAMPLE_LEN);
+
+  for (let i = 0; i < numSamples; i++) {
+    const o = i * SAMPLE_LEN;
+    const rawEEG = dv.getInt16(o + 1, false);
+    const rawL = dv.getInt16(o + 3, false);
+    const rawR = dv.getInt16(o + 5, false);
+
+    const normEEG = (Math.max(0, Math.min(4095, rawEEG)) - 2048) * (2 / 4096);
+    const notchedEEG  = notchFilter(normEEG);
+    const highPassed  = eegHighPass(notchedEEG);
+    const filtered    = eegLowPass(highPassed);
+    eegBuf[eegIdx % EEG_BUF_LEN] = filtered;
+    eegIdx++;
+
+    const notchedL = notchFilterEMGL(rawL);
+    const notchedR = notchFilterEMGR(rawR);
+    const hpFiltered_L = emgHighPassL(notchedL);
+    const hpFiltered_R = emgHighPassR(notchedR);
+    const hpL = Math.abs(hpFiltered_L);
+    const hpR = Math.abs(hpFiltered_R);
+
+    if (window.isRestPeriod) {
+      emgBaselineL = EMG_BASELINE_ALPHA * hpL + (1 - EMG_BASELINE_ALPHA) * emgBaselineL;
+      emgBaselineR = EMG_BASELINE_ALPHA * hpR + (1 - EMG_BASELINE_ALPHA) * emgBaselineR;
+    }
+
+    const correctedL = Math.max(0, hpL - emgBaselineL);
+    const correctedR = Math.max(0, hpR - emgBaselineR);
+
+    emgEnvL = envelopeL(correctedL);
+    emgEnvR = envelopeR(correctedR);
+
+    const xTalkThreshL = thresh.emgL * 0.85;
+    const xTalkThreshR = thresh.emgR * 0.85;
+    const leftActive = emgEnvL > xTalkThreshL;
+    const rightActive = emgEnvR > xTalkThreshR;
+    if (leftActive && rightActive) {
+      const ratio = Math.max(emgEnvL, emgEnvR) / (Math.min(emgEnvL, emgEnvR) + 1);
+      window.crossTalkActive = (ratio < 3.0);
+    } else {
+      window.crossTalkActive = false;
+    }
+
+    sampleCounter++;
+    if (sampleCounter % 10 === 0) computeFFT();
+  }
+}
+
+async function connectBLE() {
+  const st = document.getElementById('bleStatus');
+  if (!navigator.bluetooth) {
+    st.textContent = 'Web Bluetooth not supported (use Chrome or Edge)';
+    st.className = 'err';
+    return;
+  }
+  try {
+    st.textContent = '🔍 SCANNING for NPG Lite...';
+    const btn = document.getElementById('connectBtn');
+    btn.textContent = 'SCANNING...';
+    
+    bleDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: 'NPG' }],
+      optionalServices: ['4fafc201-1fb5-459e-8fcc-c5c9c331914b']
+    });
+
+    bleDevice.addEventListener('gattserverdisconnected', () => {
+      bleConnected = false;
+      bleDevice = null;
+      dataChar = null;
+      ctrlChar = null;
+      st.textContent = '❌ DISCONNECTED — power cycle NPG Lite';
+      st.className = 'err';
+      btn.textContent = '🔌 CONNECT BLE';
+      document.getElementById('disconnectBtn').classList.add('hidden');
+    });
+
+    const server = await bleDevice.gatt.connect();
+    const service = await server.getPrimaryService('4fafc201-1fb5-459e-8fcc-c5c9c331914b');
+    dataChar = await service.getCharacteristic('beb5483e-36e1-4688-b7f5-ea07361b26a8');
+    
+    try {
+      ctrlChar = await service.getCharacteristic('0000ff01-0000-1000-8000-00805f9b34fb');
+      await ctrlChar.writeValue(new TextEncoder().encode('START'));
+    } catch(e) { console.warn('Control char optional:', e.message); }
+
+    await dataChar.startNotifications();
+    dataChar.addEventListener('characteristicvaluechanged', e => parseBLE(e.target.value));
+
+    bleConnected = true;
+    nz1_s1=nz2_s1=nx1_s1=nz1_s2=nz2_s2=nx1_s2=0;
+    emgLNz1_s1=emgLNz2_s1=emgLNz1_s2=emgLNz2_s2=0;
+    emgRNz1_s1=emgRNz2_s1=emgRNz1_s2=emgRNz2_s2=0;
+    lz1=lz2=lx1=0;
+    hpEEGprev_x=0; hpEEGprev_y=0;
+    hpLz1=hpLz2=hpRz1=hpRz2=0;
+    envBufL.fill(0); envSumL=0; envIdxL=0;
+    envBufR.fill(0); envSumR=0; envIdxR=0;
+    eegBuf.fill(0); eegIdx=0;
+    emgEnvL=0; emgEnvR=0;
+    emgBaselineL = 150;
+    emgBaselineR = 150;
+    window.crossTalkActive = false;
+    blinkRejectedLastWindow = false;
+    resetSmoother();
+    tbrSmooth = 2.0;
+    tbrValue  = 2.0;
+
+    updateConnectionUI();
+    
+  } catch(e) {
+    const st = document.getElementById('bleStatus');
+    if (e.name === 'NotFoundError') {
+      st.textContent = '❌ No device found. Is NPG Lite powered ON?';
+    } else {
+      st.textContent = '❌ Failed: ' + e.message;
+    }
+    st.className = 'err';
+    document.getElementById('connectBtn').textContent = '🔌 CONNECT BLE';
+  }
+}
+
+async function disconnectBLE() {
+  try {
+    if (ctrlChar) await ctrlChar.writeValue(new TextEncoder().encode('STOP'));
+  } catch (e) {
+    console.warn('STOP command failed:', e.message);
+  }
+
+  try {
+    if (dataChar) await dataChar.stopNotifications();
+  } catch (e) {
+    console.warn('Stopping notifications failed:', e.message);
+  }
+
+  if (bleDevice?.gatt?.connected) {
+    bleDevice.gatt.disconnect();
+  } else {
+    bleConnected = false;
+    bleDevice = null;
+    dataChar = null;
+    ctrlChar = null;
+    updateConnectionUI();
+  }
+}
+
+const CALIB_PHASES = [
+  { 
+    id: 'rest', 
+    label: 'PHASE 1: EEG BASELINE', 
+    icon: '😌', 
+    duration: 30,
+    instruction: 'Sit perfectly still with eyes open.\nRelax all muscles completely.\nDo NOT flex or focus.\nStare at the center of the screen.\nTry to MINIMISE BLINKING during recording.\nThis establishes your neural baseline.',
+    type: 'baseline'
+  },
+  { 
+    id: 'focus', 
+    label: 'PHASE 2: FOCUS TRIAL', 
+    icon: '🧠', 
+    duration: 30,
+    instruction: 'FOCUS TASK: Count backwards from 300 by 3s.\n(300 → 297 → 294 → 291...)\n\nCount SILENTLY in your head.\nKeep going until the timer ends.\nDo NOT stop or zone out!',
+    type: 'focus'
+  },
+  { 
+    id: 'emg_left', 
+    label: 'PHASE 3: LEFT ARM MVC', 
+    icon: '💪⬅️', 
+    duration: 60,
+    instruction: 'Repeat 3 times: FLEX LEFT HARD for 5 seconds.\nRest 15 seconds between each flex.\nDo NOT flex right arm.\nThis measures your left arm maximum contraction.',
+    type: 'emg',
+    repetitions: 3,
+    holdDuration: 5,
+    restBetween: 15
+  },
+  { 
+    id: 'emg_right', 
+    label: 'PHASE 4: RIGHT ARM MVC', 
+    icon: '💪➡️', 
+    duration: 60,
+    instruction: 'Repeat 3 times: FLEX RIGHT HARD for 5 seconds.\nRest 15 seconds between each flex.\nDo NOT flex left arm.\nThis measures your right arm maximum contraction.',
+    type: 'emg',
+    repetitions: 3,
+    holdDuration: 5,
+    restBetween: 15
+  }
+];
+
+const calibData = { rest: {tbr:[],emgL:[],emgR:[]}, focus: {tbr:[],emgL:[],emgR:[]}, emg_left: {tbr:[],emgL:[],emgR:[]}, emg_right: {tbr:[],emgL:[],emgR:[]} };
+let thresh = { tbr: 2.0, emgL: 500, emgR: 500 };
+let calibThresh = { tbr: 2.0, emgL: 500, emgR: 500 };
+let adaptCount = 0, focusFC=0, focusFr=0, leftFC=0, leftFr=0, rightFC=0, rightFr=0, adaptTimer=0;
+const ADAPT_WIN = 300, EMA = 0.15;
+const mean = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
+const std = a => { if(a.length<2) return 1; const m=mean(a); return Math.sqrt(a.reduce((x,y)=>x+(y-m)**2,0)/(a.length-1)); };
+const trimmedMean = (a, trim = 0.10) => {
+  if (!a.length) return 0;
+  const sorted = [...a].sort((x, y) => x - y);
+  const cutHigh = Math.floor(sorted.length * (1 - trim));
+  const kept = sorted.slice(0, cutHigh);
+  return kept.length ? kept.reduce((x, y) => x + y, 0) / kept.length : 0;
+};
+
+function computeThresholds() {
+  const restTBR   = mean(calibData.rest.tbr);
+  const focusTBR  = mean(calibData.focus.tbr);
+
+  let tbrThresh;
+  if (focusTBR < restTBR) {
+    tbrThresh = (restTBR + focusTBR) / 2;
+  } else {
+    tbrThresh = restTBR * 0.80;
+  }
+  const tbrMin = Math.min(restTBR, focusTBR) * 0.6;
+  const tbrMax = Math.max(restTBR, focusTBR) * 1.4;
+  tbrThresh = Math.max(tbrMin, Math.min(tbrMax, tbrThresh));
+
+  const mvcLeft  = trimmedMean(calibData.emg_left.emgL);
+  let leftThresh  = mvcLeft * 0.30;
+  leftThresh = Math.max(40, Math.min(600, leftThresh));
+
+  const mvcRight = trimmedMean(calibData.emg_right.emgR);
+  let rightThresh = mvcRight * 0.30;
+  rightThresh = Math.max(40, Math.min(600, rightThresh));
+
+  thresh      = { tbr: tbrThresh, emgL: leftThresh, emgR: rightThresh };
+  calibThresh = { ...thresh };
+}
+
+function getEnemyBehaviorModifiers(level) {
+  return {
+    homingMultiplier:   1 + (level - 1) * 0.15,
+    speedMultiplier:    1 + (level - 1) * 0.10,
+    spawnRateMultiplier:1 + (level - 1) * 0.05,
+    maxEnemies:         8 + Math.floor(level / 2)
+  };
+}
+
+function adaptThresholds() {
+  adaptTimer++;
+  if (adaptTimer < ADAPT_WIN) return;
+  adaptTimer = 0;
+
+  const fR = focusFr > 0 ? focusFC / focusFr : 0;
+  const lR = leftFr  > 0 ? leftFC  / leftFr  : 0;
+  const rR = rightFr > 0 ? rightFC / rightFr  : 0;
+
+  let changed = false;
+
+  const MIN_TBR_FACTOR = 0.70;
+  const MAX_TBR_FACTOR = 1.30;
+  const ABSOLUTE_MIN_TBR = 1.2;
+
+  if (fR < 0.15) {
+    thresh.tbr = Math.min(calibThresh.tbr * MAX_TBR_FACTOR, thresh.tbr * (1 + EMA * 0.7));
+    changed = true;
+  } else if (fR > 0.75) {
+    thresh.tbr = Math.max(calibThresh.tbr * MIN_TBR_FACTOR, thresh.tbr * (1 - EMA * 0.7));
+    changed = true;
+  }
+  if (thresh.tbr < ABSOLUTE_MIN_TBR) { thresh.tbr = ABSOLUTE_MIN_TBR; changed = true; }
+
+  if (lR < 0.05) {
+    thresh.emgL = Math.max(calibThresh.emgL * 0.5, thresh.emgL * (1 - EMA * 0.5));
+    changed = true;
+  }
+  if (rR < 0.05) {
+    thresh.emgR = Math.max(calibThresh.emgR * 0.5, thresh.emgR * (1 - EMA * 0.5));
+    changed = true;
+  }
+
+  if (changed) adaptCount++;
+  focusFC = focusFr = leftFC = leftFr = rightFC = rightFr = 0;
+}
+
+function updateDynamicBaseline() {
+    const now = performance.now();
+    const isMoving = ctrlLeft || ctrlRight;
+
+    if (isMoving) {
+        lastMovementTime = now;
+        restAccumulatorL = 0;
+        restAccumulatorR = 0;
+        restSampleCount = 0;
+    } else {
+        const timeSinceMove = now - lastMovementTime;
+        if (timeSinceMove > REST_DETECTION_TIME) {
+            restAccumulatorL += emgEnvL;
+            restAccumulatorR += emgEnvR;
+            restSampleCount++;
+
+            if (restSampleCount >= 20) {
+                const avgRestL = restAccumulatorL / restSampleCount;
+                const avgRestR = restAccumulatorR / restSampleCount;
+
+                if (avgRestL < thresh.emgL * 0.5 && avgRestR < thresh.emgR * 0.5) {
+                    emgBaselineL = REST_BASELINE_ALPHA * avgRestL + (1 - REST_BASELINE_ALPHA) * emgBaselineL;
+                    emgBaselineR = REST_BASELINE_ALPHA * avgRestR + (1 - REST_BASELINE_ALPHA) * emgBaselineR;
+                }
+
+                restAccumulatorL = 0;
+                restAccumulatorR = 0;
+                restSampleCount = 0;
+            }
+        }
+    }
+}
+
+function updateThreshMarkers() {
+  const tbrMax = calibThresh.tbr * 2;
+  document.getElementById('adaptThreshC').style.left = Math.min(95, (thresh.tbr / tbrMax) * 100) + '%';
+  document.getElementById('adaptThreshL').style.left = Math.min(95, (thresh.emgL / (calibThresh.emgL * 2)) * 100) + '%';
+  document.getElementById('adaptThreshR').style.left = Math.min(95, (thresh.emgR / (calibThresh.emgR * 2)) * 100) + '%';
+}
+
+let gameRunning = false, score = 0, lives = 3, level = 1, kills = 0;
+let shipX, shipY, shipVX = 0, shipInv = 0;
+let lasers = [], asteroids = [], particles = [], ufos = [], enemyLasers = [];
+let spawnT = 0, ufoT = 180, scoreT = 0, levelT = 0, laserCD = 0;
+let focusLockTimer = 0, wasFocusLastFrame = false;
+const FOCUS_HYSTERESIS = 0.15;
+const MIN_FOCUS_DURATION = 5;
+const KILLS_PER_LEVEL = 15;
+let rafId, betaSamples = [];
+let ctrlFocus = false, ctrlLeft = false, ctrlRight = false;
+let currentParticipant = { name: 'ANON', age: '', gender: '', handedness: '', trial: 1, notes: '' };
+let tsBuffer = [], tsLastMs = 0, gameStartMs = 0, pendingEvent = '';
+let sessionMeta = {};
+
+const gc = document.getElementById('gameCanvas'), gx = gc.getContext('2d');
+const sfC = document.getElementById('starfield'), sfX = sfC.getContext('2d');
+let stars = [];
+
+function initStars() {
+  sfC.width = innerWidth; sfC.height = innerHeight;
+  stars = Array.from({length: 200}, () => ({
+    x: Math.random() * sfC.width, y: Math.random() * sfC.height,
+    sz: Math.random() < 0.7 ? 1 : 2, spd: Math.random() * 0.6 + 0.1,
+    a: Math.random() * 0.7 + 0.2, tw: Math.random() * Math.PI * 2,
+    col: Math.random() < 0.15 ? '#00e5ff' : Math.random() < 0.1 ? '#ffff00' : '#fff'
+  }));
+}
+
+function drawStars(spd = 1) {
+  sfX.clearRect(0, 0, sfC.width, sfC.height);
+  for (const s of stars) {
+    s.tw += 0.015;
+    sfX.globalAlpha = s.a * (0.7 + 0.3 * Math.sin(s.tw));
+    sfX.fillStyle = s.col;
+    sfX.fillRect(Math.round(s.x), Math.round(s.y), s.sz, s.sz);
+    s.y += s.spd * spd;
+    if (s.y > sfC.height) { s.y = 0; s.x = Math.random() * sfC.width; }
+  }
+  sfX.globalAlpha = 1;
+}
+
+function resizeAll() { gc.width = innerWidth; gc.height = innerHeight; sfC.width = innerWidth; sfC.height = innerHeight; }
+
+function sampleSignal() {
+  const now = Date.now();
+  if (now - tsLastMs < 50) return;
+  tsLastMs = now;
+  const elapsed = (now - gameStartMs) / 1000;
+  const demoTBR = ctrlFocus ? thresh.tbr * 0.7 + Math.random() * 0.2 : thresh.tbr * 1.3 + Math.random() * 0.3;
+  tsBuffer.push({
+    ts: now, elapsed_s: parseFloat(elapsed.toFixed(3)),
+    tbr:       parseFloat((bleConnected ? tbrValue : demoTBR).toFixed(4)),
+    theta_rel: parseFloat((smoothBands.theta * 100).toFixed(2)),
+    beta_rel:  parseFloat((smoothBands.beta  * 100).toFixed(2)),
+    emgL: parseFloat((bleConnected ? emgEnvL : (ctrlLeft  ? thresh.emgL * 1.3 : thresh.emgL * 0.2)).toFixed(1)),
+    emgR: parseFloat((bleConnected ? emgEnvR : (ctrlRight ? thresh.emgR * 1.3 : thresh.emgR * 0.2)).toFixed(1)),
+    tbr_thresh: parseFloat(thresh.tbr.toFixed(4)),
+    tbr_calib_thresh: parseFloat(calibThresh.tbr.toFixed(4)),
+    emgL_thresh: thresh.emgL, emgR_thresh: thresh.emgR,
+    focus: ctrlFocus ? 1 : 0, left: ctrlLeft ? 1 : 0, right: ctrlRight ? 1 : 0,
+    blink_rejected: blinkRejectedLastWindow ? 1 : 0,
+    event: pendingEvent
+  });
+  pendingEvent = '';
+}
+
+function logEvent(ev) { pendingEvent = ev; }
+
+function resolveControls() {
+  if (bleConnected) {
+    ctrlFocus = tbrValue <= thresh.tbr;
+
+    if (window.crossTalkActive) {
+      ctrlLeft  = false;
+      ctrlRight = false;
+    } else {
+      ctrlLeft  = emgEnvL >= thresh.emgL;
+      ctrlRight = emgEnvR >= thresh.emgR;
+    }
+  } else {
+    ctrlFocus = !!keys['Space'];
+    ctrlLeft  = !!(keys['ArrowLeft'] || keys['KeyA']);
+    ctrlRight = !!(keys['ArrowRight'] || keys['KeyD']);
+  }
+  focusFr++; if (ctrlFocus) focusFC++;
+  leftFr++;  if (ctrlLeft)  leftFC++;
+  rightFr++; if (ctrlRight) rightFC++;
+}
+
+const keys = {};
+window.addEventListener('keydown', e => { keys[e.code] = true; if (['ArrowLeft','ArrowRight','KeyA','KeyD','Space'].includes(e.code)) e.preventDefault(); });
+window.addEventListener('keyup', e => keys[e.code] = false);
+
+function drawShip(x, y, focused) {
+  const S = 3;
+  const bodyColor = focused ? '#00e5ff' : '#4488cc';
+  const wingColor = focused ? '#0088bb' : '#223366';
+  const coreColor = focused ? '#ffffff' : '#aaddff';
+  const thrusterColor = focused ? '#00ff88' : '#0066ff';
+  const glowColor = focused ? 'rgba(0,229,255,0.4)' : 'rgba(68,136,204,0.3)';
+
+  gx.save();
+  const grd = gx.createRadialGradient(x, y + 22*S/3, 2, x, y + 22*S/3, 18);
+  grd.addColorStop(0, thrusterColor);
+  grd.addColorStop(1, 'transparent');
+  gx.fillStyle = grd;
+  gx.fillRect(x - 18, y + 10, 36, 28);
+  gx.restore();
+
+  const pixels = [
+    [0,-6,3],
+    [-1,-5,0],[0,-5,0],[1,-5,0],
+    [-2,-4,0],[0,-4,3],[2,-4,0],
+    [-3,-3,0],[-1,-3,0],[0,-3,2],[1,-3,0],[3,-3,0],
+    [-4,-2,0],[-3,-2,0],[-1,-2,0],[0,-2,2],[1,-2,0],[3,-2,0],[4,-2,0],
+    [-4,-1,1],[-3,-1,0],[-2,-1,0],[-1,-1,0],[0,-1,0],[1,-1,0],[2,-1,0],[3,-1,0],[4,-1,1],
+    [-4,0,1],[-3,0,1],[-2,0,0],[-1,0,0],[0,0,0],[1,0,0],[2,0,0],[3,0,1],[4,0,1],
+    [-5,1,1],[-4,1,1],[-3,1,1],[-2,1,0],[-1,1,0],[0,1,0],[1,1,0],[2,1,0],[3,1,1],[4,1,1],[5,1,1],
+    [-5,2,1],[-4,2,1],[-2,2,0],[-1,2,0],[0,2,0],[1,2,0],[2,2,0],[4,2,1],[5,2,1],
+    [-3,2,4],[-1,3,4],[0,3,4],[1,3,4],[3,2,4],
+    [-2,3,0],[2,3,0],
+    [0,4,4],
+  ];
+  const cols = [bodyColor, wingColor, coreColor, focused ? '#00ffff' : '#88ccff', thrusterColor];
+  for (const [cx, cy, ci] of pixels) {
+    gx.fillStyle = cols[ci];
+    gx.fillRect(Math.round(x + cx*S - S/2), Math.round(y + cy*S - S/2), S, S);
+  }
+  if (focused) {
+    gx.shadowColor = '#00e5ff';
+    gx.shadowBlur = 12;
+    gx.strokeStyle = '#00e5ff';
+    gx.lineWidth = 1;
+    gx.strokeRect(x - 16, y - 20, 32, 38);
+    gx.shadowBlur = 0;
+  }
+}
+
+function drawLaser(x, y) {
+  gx.fillStyle = '#00ffcc';
+  gx.shadowColor = '#00ffcc';
+  gx.shadowBlur = 6;
+  gx.fillRect(x - 2, y, 4, 4);
+  gx.fillRect(x - 1, y + 4, 2, 8);
+  gx.fillStyle = '#ffffff';
+  gx.fillRect(x - 1, y, 2, 2);
+  gx.shadowBlur = 0;
+}
+
+function drawUFO(x, y, frame, color) {
+  const S = 3;
+  const c1 = color || '#ffff00';
+  const c2 = '#ff8800';
+  const c3 = '#ffffff';
+  const dome = [
+    [0,-3,2],
+    [-1,-3,2],[1,-3,2],
+    [-2,-2,0],[0,-2,2],[2,-2,0],
+    [-3,-1,0],[-2,-1,2],[-1,-1,2],[0,-1,2],[1,-1,2],[2,-1,2],[3,-1,0],
+    [-4,0,0],[-3,0,0],[-2,0,1],[-1,0,1],[0,0,1],[1,0,1],[2,0,1],[3,0,0],[4,0,0],
+    [-4,1,0],[-3,1,1],[-2,1,0],[-1,1,0],[0,1,0],[1,1,0],[2,1,0],[3,1,1],[4,1,0],
+    [-3,2,0],[-2,2,2],[-1,2,0],[0,2,2],[1,2,0],[2,2,2],[3,2,0],
+  ];
+  const cols = [c1, c2, c3];
+  for (const [cx, cy, ci] of dome) {
+    gx.fillStyle = cols[ci];
+    gx.fillRect(Math.round(x + cx*S - S/2), Math.round(y + cy*S - S/2), S, S);
+  }
+  const legPositions = [-3, -1, 1, 3];
+  legPositions.forEach((lx, i) => {
+    const legColor = (i % 2 === 0) === (frame % 2 === 0) ? c1 : c2;
+    gx.fillStyle = legColor;
+    gx.fillRect(Math.round(x + lx*S - S/2), Math.round(y + 3*S - S/2), S, S*2);
+  });
+}
+
+function drawAlien(x, y, frame, color) {
+  const S = 3;
+  const c1 = color || '#00e5ff';
+  const c2 = '#ffffff';
+  const pixels = [
+    [-1,-2,1],[0,-2,0],[1,-2,1],
+    [-2,-1,0],[-1,-1,0],[0,-1,0],[1,-1,0],[2,-1,0],
+    [-2,0,0],[-1,0,1],[0,0,0],[1,0,1],[2,0,0],
+    [-2,1,0],[2,1,0],
+    [-1,2,0],[1,2,0],
+  ];
+  const cols = [c1, c2];
+  for (const [cx, cy, ci] of pixels) {
+    gx.fillStyle = cols[ci];
+    gx.fillRect(Math.round(x + cx*S - S/2), Math.round(y + cy*S - S/2), S, S);
+  }
+  const armX1 = frame % 2 === 0 ? -3 : -2;
+  const armX2 = frame % 2 === 0 ? 3 : 2;
+  gx.fillStyle = c1;
+  gx.fillRect(Math.round(x + armX1*S - S/2), Math.round(y + 1*S - S/2), S, S);
+  gx.fillRect(Math.round(x + armX2*S - S/2), Math.round(y + 1*S - S/2), S, S);
+}
+
+function spawnExplosion(x, y, color) {
+  const colors = [color, '#ffffff', '#ffff00'];
+  for (let i = 0; i < 18; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const spd = Math.random() * 3.5 + 0.5;
+    particles.push({
+      x, y,
+      vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      sz: Math.random() < 0.4 ? 4 : 2,
+      life: 1, decay: Math.random() * 0.04 + 0.025
+    });
+  }
+}
+
+function updateLivesHUD() {
+  const w = document.getElementById('hLives'); w.innerHTML = '';
+  for (let i = 0; i < 3; i++) { const d = document.createElement('div'); d.className = 'life-px' + (i >= lives ? ' gone' : ''); w.appendChild(d); }
+}
+function updateScoreHUD() { document.getElementById('hScore').textContent = String(score).padStart(6,'0'); document.getElementById('hLevel').textContent = 'LEVEL ' + level; }
+function updateSignalHUD() {
+  const demoTBR = ctrlFocus ? thresh.tbr * 0.7 + Math.random() * 0.1 : thresh.tbr * 1.3 + Math.random() * 0.2;
+  const displayTBR = bleConnected ? tbrValue : demoTBR;
+  const tbrMax = (calibThresh.tbr || thresh.tbr) * 2.5;
+
+  document.getElementById('adaptFillC').style.width = Math.min(100, (displayTBR / tbrMax) * 100) + '%';
+  const bEl = document.getElementById('hBeta');
+  bEl.textContent = displayTBR.toFixed(2);
+  bEl.className   = 'h-val' + (ctrlFocus ? ' ok' : '');
+
+  const lv = bleConnected ? emgEnvL : (ctrlLeft  ? thresh.emgL * 1.3 : thresh.emgL * 0.2);
+  const rv = bleConnected ? emgEnvR : (ctrlRight ? thresh.emgR * 1.3 : thresh.emgR * 0.2);
+  document.getElementById('adaptFillL').style.width = Math.min(100, (lv / (calibThresh.emgL * 2)) * 100) + '%';
+  document.getElementById('adaptFillR').style.width = Math.min(100, (rv / (calibThresh.emgR * 2)) * 100) + '%';
+  document.getElementById('hL').textContent = 'L:' + (bleConnected ? Math.round(lv) : (ctrlLeft  ? 'ACT' : '--'));
+  document.getElementById('hR').textContent = 'R:' + (bleConnected ? Math.round(rv) : (ctrlRight ? 'ACT' : '--'));
+}
+function showNotif(msg, col) { const el = document.getElementById('notif'); el.textContent = msg; el.style.color = col; el.style.opacity = '1'; setTimeout(() => el.style.opacity = '0', 1600); }
+
+function initGame() {
+  resizeAll(); shipX = gc.width / 2; shipY = gc.height * 0.80; shipVX = 0; shipInv = 0;
+  lasers = []; asteroids = []; particles = []; ufos = []; enemyLasers = [];
+  score = 0; lives = 3; level = 1; kills = 0;
+  spawnT = 0; ufoT = 180; scoreT = 0; levelT = 0; laserCD = 0;
+  adaptTimer = 0; adaptCount = 0;
+  focusFC = focusFr = leftFC = leftFr = rightFC = rightFr = 0;
+  lastMovementTime = performance.now();
+  restAccumulatorL = 0;
+  restAccumulatorR = 0;
+  restSampleCount = 0;
+  betaSamples = []; tsBuffer = []; tsLastMs = 0; gameStartMs = Date.now();
+  window.isRestPeriod   = false;
+  window.crossTalkActive = false;
+  focusLockTimer = 0;
+  wasFocusLastFrame = false;
+  updateLivesHUD(); updateScoreHUD(); updateThreshMarkers();
+}
+
+function gameLoop() {
+  if (!gameRunning) return;
+  resolveControls();
+  if (bleConnected) updateDynamicBaseline();
+  adaptThresholds(); sampleSignal();
+  gx.clearRect(0, 0, gc.width, gc.height);
+  drawStars(ctrlFocus ? 3 : 1.5);
+
+  const tVX = ctrlLeft ? -3.5 : ctrlRight ? 3.5 : 0;
+  shipVX += (tVX - shipVX) * 0.16;
+  shipX = Math.max(28, Math.min(gc.width - 28, shipX + shipVX));
+  if (shipInv > 0) shipInv--;
+
+  laserCD--;
+  if (laserCD < 0) laserCD = 0;
+
+  const focusThresholdWithMargin = wasFocusLastFrame
+    ? thresh.tbr * (1 + FOCUS_HYSTERESIS)
+    : thresh.tbr * (1 - FOCUS_HYSTERESIS);
+  const sustainedFocus = bleConnected
+    ? (tbrValue <= focusThresholdWithMargin)
+    : ctrlFocus;
+
+  if (sustainedFocus) { focusLockTimer++; } else { focusLockTimer = 0; }
+
+  const canFire = sustainedFocus && focusLockTimer >= MIN_FOCUS_DURATION && laserCD <= 0;
+  if (canFire) {
+    const focusQuality = bleConnected ? Math.max(0, 1 - (tbrValue / thresh.tbr)) : 1;
+    const useDualLasers = bleConnected ? (focusQuality > 0.3) : true;
+    if (useDualLasers) {
+      lasers.push({ x: shipX - 6, y: shipY - 30 }, { x: shipX + 6, y: shipY - 30 });
+    } else {
+      lasers.push({ x: shipX, y: shipY - 30 });
+    }
+    const baseCooldown = bleConnected ? 40 : 30;
+    const cooldownReduction = bleConnected ? Math.floor(focusQuality * 15) : 0;
+    laserCD = Math.max(25, baseCooldown - cooldownReduction);
+    document.getElementById('flash').style.opacity = useDualLasers ? '0.8' : '0.4';
+    setTimeout(() => document.getElementById('flash').style.opacity = '0', 60);
+  }
+  wasFocusLastFrame = sustainedFocus;
+  lasers = lasers.filter(l => l.y > -20);
+  lasers.forEach(l => { l.y -= 12; drawLaser(l.x, l.y); });
+
+  let animFrame = Math.floor(Date.now() / 300) % 2;
+
+  spawnT++;
+  const spawnRate = Math.max(35, 110 - level * 7);
+  if (spawnT >= spawnRate) {
+    spawnT = 0;
+    const isBig = Math.random() < 0.3;
+    const spawnX = Math.random() * (gc.width - 100) + 50;
+    const spawnY = -50;
+
+    const baseSpeed = (isBig ? 1.8 : 2.5) + level * 0.25;
+    const timeToIntercept = (shipY - spawnY) / baseSpeed;
+    const predictedShipX = shipX + shipVX * timeToIntercept * 0.6;
+
+    const dx = predictedShipX - spawnX;
+    const dy = shipY - spawnY;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+    const spread = (Math.random() - 0.5) * 0.5;
+
+    asteroids.push({
+      x: spawnX,
+      y: spawnY,
+      r: isBig ? 22 : 14,
+      vx: (dx / dist) * baseSpeed + spread,
+      vy: Math.max(1.5, (dy / dist) * baseSpeed),
+      homing: isBig ? 0.08 : 0.12,
+      type: isBig ? 'ufo' : (Math.random() < 0.5 ? 'alien1' : 'alien2'),
+      color: isBig ? ['#ffff00','#ff8800','#cc44ff'][Math.floor(Math.random()*3)]
+                   : ['#00e5ff','#ff2244','#00ff41'][Math.floor(Math.random()*3)],
+      hp: isBig ? (level > 5 ? 3 : 2) : 1, hit: false,
+      waveAmp: isBig ? 0.5 : (Math.random() * 1.0),
+      waveFreq: 0.02 + Math.random() * 0.02,
+      waveT: Math.random() * Math.PI * 2,
+      baseVX: 0
+    });
+    asteroids[asteroids.length-1].baseVX = asteroids[asteroids.length-1].vx;
+  }
+
+  for (let ai = asteroids.length - 1; ai >= 0; ai--) {
+    const a = asteroids[ai];
+
+    const dxShip = shipX - a.x;
+    const dyShip = shipY - a.y;
+    const distToShip = Math.sqrt(dxShip * dxShip + dyShip * dyShip) || 1;
+    const dirX = dxShip / distToShip;
+    const dirY = dyShip / distToShip;
+    const proximityFactor = Math.min(1.5, 200 / Math.max(distToShip, 50));
+    const homingForce = a.homing * (1 + level * 0.1) * proximityFactor;
+
+    a.vx += (dirX * Math.abs(a.vy) - a.vx) * homingForce;
+    if (a.type === 'ufo') {
+      a.vy += (dirY * Math.abs(a.vy) - a.vy) * homingForce * 0.5;
+    }
+    a.vy = Math.max(1.5 + level * 0.1, a.vy);
+
+    a.waveT += a.waveFreq;
+    const maxLateral = 5.0 + level * 0.3;
+    a.vx = Math.max(-maxLateral, Math.min(maxLateral, a.vx));
+    a.x += a.vx + Math.sin(a.waveT) * a.waveAmp;
+    a.y += a.vy;
+
+    gx.save();
+    if (a.hit) { gx.globalAlpha = 0.5; }
+    if (a.type === 'ufo') {
+      drawUFO(a.x, a.y, animFrame, a.color);
+    } else {
+      drawAlien(a.x, a.y, animFrame, a.color);
+    }
+    gx.restore();
+    a.hit = false;
+
+    for (let li = lasers.length - 1; li >= 0; li--) {
+      const l = lasers[li];
+      if (Math.hypot(l.x - a.x, l.y - a.y) < a.r) {
+        lasers.splice(li, 1);
+        a.hp--;
+        a.hit = true;
+        if (a.hp <= 0) {
+          spawnExplosion(a.x, a.y, a.color);
+          asteroids.splice(ai, 1);
+          score += (a.type === 'ufo' ? 30 : 10) * level; kills++;
+          updateScoreHUD(); logEvent('ast_kill');
+        }
+        break;
+      }
+    }
+
+    if (ai >= asteroids.length) continue;
+    if (a.y > gc.height + 60) { asteroids.splice(ai, 1); continue; }
+    if (shipInv <= 0 && Math.hypot(a.x - shipX, a.y - shipY) < a.r + 15) {
+      spawnExplosion(a.x, a.y, '#ff2244');
+      asteroids.splice(ai, 1); lives--; updateLivesHUD(); shipInv = 90;
+      logEvent('ast_collision'); showNotif('HIT!', '#ff2244');
+      if (lives <= 0) { endGame(); return; }
+    }
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.life -= p.decay;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    gx.globalAlpha = p.life;
+    gx.fillStyle = p.color;
+    gx.fillRect(Math.round(p.x), Math.round(p.y), p.sz, p.sz);
+    gx.globalAlpha = 1;
+  }
+
+  if (shipInv <= 0 || Math.floor(shipInv / 6) % 2 === 0) {
+    drawShip(shipX, shipY, ctrlFocus);
+  }
+  const newLevel = 1 + Math.floor(kills / KILLS_PER_LEVEL);
+  if (newLevel > level) { level = newLevel; logEvent('level_up_' + level); showNotif('LEVEL ' + level + '!', '#ffff00'); updateScoreHUD(); }
+  if (bleConnected) betaSamples.push(tbrValue);
+  updateSignalHUD();
+  rafId = requestAnimationFrame(gameLoop);
+}
+
+function endGame() {
+  gameRunning = false; cancelAnimationFrame(rafId);
+  document.getElementById('hud').classList.add('hidden');
+  document.getElementById('gameControls').classList.add('hidden');
+  const durSec = Math.round((Date.now() - gameStartMs) / 1000);
+  const mins = Math.floor(durSec / 60), secs = durSec % 60;
+  const avgTBR = betaSamples.length
+    ? betaSamples.reduce((a, b) => a + b, 0) / betaSamples.length
+    : (tsBuffer.length ? tsBuffer.reduce((s, r) => s + (r.tbr || 0), 0) / tsBuffer.length : thresh.tbr);
+  sessionMeta = { participant: currentParticipant, score, level, kills, duration: `${mins}:${String(secs).padStart(2,'0')}`, tbrThresh: thresh.tbr.toFixed(4), avgTBR: avgTBR.toFixed(4), adaptCount, bleConnected, samples: tsBuffer.length };
+  document.querySelector('#gameOverScreen .go-title').textContent = gameEndReason === 'stopped' ? 'GAME STOPPED' : 'GAME OVER';
+  document.getElementById('goScore').textContent = score.toLocaleString();
+  document.getElementById('goName').textContent = currentParticipant.name || 'ANON';
+  document.getElementById('goDur').textContent = `${mins}:${String(secs).padStart(2,'0')}`;
+  document.getElementById('goLevel').textContent = level;
+  document.getElementById('goKills').textContent = kills;
+  document.getElementById('goTBeta').textContent = thresh.tbr.toFixed(3);
+  document.getElementById('goTLR').textContent = Math.round(thresh.emgL) + ' / ' + Math.round(thresh.emgR);
+  document.getElementById('goAvgBeta').textContent = avgTBR.toFixed(3);
+  document.getElementById('goAdapt').textContent = adaptCount;
+  document.getElementById('goSamples').textContent = tsBuffer.length + ' @ 20Hz';
+
+  const threshForRating = (thresh.tbr > 0 ? thresh.tbr : calibThresh.tbr) || 1;
+  const focusRatio = avgTBR / threshForRating;
+  document.getElementById('goFocusRatioRaw').textContent =
+    focusRatio.toFixed(3) + '  (' + avgTBR.toFixed(3) + ' / ' + threshForRating.toFixed(3) + ')';
+
+  showScreen('gameOverScreen');
+  gameEndReason = 'game_over';
+}
+
+function showSignalViewer() {
+  showScreen('signalScreen');
+  const ts = tsBuffer;
+  if (!ts.length) { document.getElementById('sigSubInfo').textContent = 'NO DATA RECORDED'; return; }
+  const totalSec = ts[ts.length-1].elapsed_s;
+  document.getElementById('sigSubInfo').textContent =
+    `${currentParticipant.name || 'ANON'} · ${ts.length} SAMPLES · ${totalSec.toFixed(1)}s`;
+
+  const canvas = document.getElementById('signalCanvas');
+  canvas.width = canvas.offsetWidth || 880;
+  canvas.height = Math.round(window.innerHeight * 0.42);
+  const W = canvas.width, H = canvas.height;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#020810';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = 'rgba(0,229,255,0.08)';
+  ctx.lineWidth = 1;
+  for (let g = 0; g <= 4; g++) {
+    const gy = (g / 4) * H;
+    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+  }
+  for (let g = 0; g <= 10; g++) {
+    const gx2 = (g / 10) * W;
+    ctx.beginPath(); ctx.moveTo(gx2, 0); ctx.lineTo(gx2, H); ctx.stroke();
+  }
+
+  const n = ts.length;
+
+  let maxL = 1, maxR = 1;
+  for (const s of ts) { maxL = Math.max(maxL, s.emgL); maxR = Math.max(maxR, s.emgR); }
+  const emgMax = Math.max(maxL, maxR, ts[0].emgL_thresh * 2);
+
+  ctx.fillStyle = 'rgba(0,229,255,0.06)';
+  let inFocus = false, fStart = 0;
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * W;
+    if (ts[i].focus && !inFocus) { inFocus = true; fStart = x; }
+    if (!ts[i].focus && inFocus) { ctx.fillRect(fStart, 0, x - fStart, H); inFocus = false; }
+  }
+  if (inFocus) ctx.fillRect(fStart, 0, W - fStart, H);
+
+  let maxTBR = 0.01;
+  for (const s of ts) { maxTBR = Math.max(maxTBR, s.tbr || 0); }
+  maxTBR = Math.max(maxTBR, (ts[0].tbr_thresh || 2.0) * 1.5);
+
+  const threshNorm = Math.min(1, (ts[0].tbr_thresh || thresh.tbr) / maxTBR);
+  const threshY = H - threshNorm * H * 0.9;
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = 'rgba(255,255,0,0.55)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, threshY); ctx.lineTo(W, threshY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle = 'rgba(255,34,68,0.75)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * W;
+    const y = H - (ts[i].emgL / emgMax) * (H * 0.45);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(204,68,255,0.75)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * W;
+    const y = H - (ts[i].emgR / emgMax) * (H * 0.45);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = '#00e5ff';
+  ctx.shadowBlur = 4;
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * W;
+    const y = H - Math.min(1, (ts[i].tbr || 0) / maxTBR) * (H * 0.92);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  const emgLThreshY = H - (ts[0].emgL_thresh / emgMax) * (H * 0.45);
+  const emgRThreshY = H - (ts[0].emgR_thresh / emgMax) * (H * 0.45);
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = 'rgba(255,34,68,0.4)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, emgLThreshY); ctx.lineTo(W, emgLThreshY); ctx.stroke();
+  ctx.strokeStyle = 'rgba(204,68,255,0.4)';
+  ctx.beginPath(); ctx.moveTo(0, emgRThreshY); ctx.lineTo(W, emgRThreshY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = 'rgba(200,230,255,0.5)';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'right';
+  for (let g = 0; g <= 4; g++) {
+    const val = ((1 - g / 4) * maxTBR).toFixed(1);
+    ctx.fillText(val, 30, (g / 4) * H + 4);
+  }
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(200,230,255,0.4)';
+  ctx.font = '10px monospace';
+  const step = Math.ceil(totalSec / 10);
+  for (let t = 0; t <= totalSec; t += step) {
+    const x = (t / totalSec) * W;
+    ctx.fillText(t + 's', x + 2, H - 4);
+  }
+
+  ctx.font = 'bold 11px monospace';
+  ctx.fillStyle = '#00e5ff'; ctx.fillText('TBR', W - 130, 18);
+  ctx.fillStyle = '#ff2244'; ctx.fillText('EMG L', W - 80, 18);
+  ctx.fillStyle = '#cc44ff'; ctx.fillText('EMG R', W - 30, 18);
+
+  const avgTBRVal = ts.reduce((s, r) => s + (r.tbr || 0), 0) / n;
+  const focusFrames = ts.filter(r => r.focus).length;
+  const leftFrames  = ts.filter(r => r.left).length;
+  const rightFrames = ts.filter(r => r.right).length;
+  document.getElementById('sigStats').innerHTML =
+    `<span style="color:var(--cyan)">Avg TBR: ${avgTBRVal.toFixed(3)}</span>` +
+    `<span style="color:var(--green)"> Focus: ${Math.round(focusFrames/n*100)}%</span>` +
+    `<span style="color:var(--red)"> L-flex: ${Math.round(leftFrames/n*100)}%</span>` +
+    `<span style="color:var(--purple)"> R-flex: ${Math.round(rightFrames/n*100)}%</span>`;
+
+  document.getElementById('axL').textContent = '0s';
+  document.getElementById('axM').textContent = (totalSec / 2).toFixed(0) + 's';
+  document.getElementById('axR').textContent = totalSec.toFixed(0) + 's';
+}
+
+function exportCSV() {
+  if (!tsBuffer.length) { alert('No data recorded yet. Play a game first!'); return; }
+  const p = currentParticipant;
+  const headers = 'timestamp_ms,elapsed_s,tbr,theta_rel_pct,beta_rel_pct,tbr_thresh,tbr_calib_thresh,emgL,emgR,emgL_thresh,emgR_thresh,focus,left,right,event';
+  const rows = tsBuffer.map(s => `${s.ts},${s.elapsed_s},${s.tbr},${s.theta_rel},${s.beta_rel},${s.tbr_thresh},${s.tbr_calib_thresh ?? s.tbr_thresh},${s.emgL},${s.emgR},${s.emgL_thresh},${s.emgR_thresh},${s.focus},${s.left},${s.right},${s.event || ''}`);
+  const csv = headers + '\n' + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `attention_seeker_${p.name || 'anon'}_T${p.trial}_${Date.now()}.csv`;
+  a.click();
+  showNotif('CSV SAVED!', '#00ff41');
+}
+
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); if (id) document.getElementById(id).classList.remove('hidden'); }
+function showLanding() {
+  if (calibRafId) {
+    cancelAnimationFrame(calibRafId);
+    calibRafId = null;
+  }
+  document.getElementById('hud').classList.add('hidden');
+  document.getElementById('gameControls').classList.add('hidden');
+  showScreen('landingScreen');
+}
+function showParticipant() { showScreen('participantScreen'); setTimeout(() => document.getElementById('fName').focus(), 100); }
+function submitParticipant() {
+  currentParticipant = {
+    name: document.getElementById('fName').value.trim() || 'ANON',
+    age: document.getElementById('fAge').value,
+    gender: document.getElementById('fGender').value,
+    handedness: document.getElementById('fHand').value,
+    trial: parseInt(document.getElementById('fTrial').value) || 1,
+    notes: document.getElementById('fNotes').value.trim()
+  };
+  goToCalib();
+}
+
+function goToCalib() {
+  if (calibRafId) {
+    cancelAnimationFrame(calibRafId);
+    calibRafId = null;
+  }
+
+  for (const key of Object.keys(calibData)) {
+    calibData[key].tbr  = [];
+    calibData[key].emgL = [];
+    calibData[key].emgR = [];
+  }
+  hpEEGprev_x = 0; hpEEGprev_y = 0;
+  blinkRejectedLastWindow = false;
+
+  const dots = document.getElementById('phaseDots');
+  dots.innerHTML = '';
+  for (let i = 0; i < CALIB_PHASES.length; i++) {
+    const dot = document.createElement('div');
+    dot.id = 'pd' + i;
+    dot.className = 'phase-dot' + (i === 0 ? ' active' : '');
+    dots.appendChild(dot);
+  }
+
+  document.getElementById('calibResult').classList.add('hidden');
+  document.getElementById('calibIcon').textContent = CALIB_PHASES[0].icon;
+  document.getElementById('calibPhaseTitle').textContent = CALIB_PHASES[0].label;
+  document.getElementById('calibInstruction').textContent = CALIB_PHASES[0].instruction;
+  document.getElementById('calibNum').textContent = CALIB_PHASES[0].duration;
+  document.getElementById('calibRing').style.stroke = 'var(--cyan)';
+  document.getElementById('calibRing').style.strokeDashoffset = '0';
+  document.getElementById('calibProg').style.width = '0%';
+  document.getElementById('calibProgLabel').textContent = 'PREPARING CALIBRATION';
+  document.getElementById('cvEEG').style.height = '3px';
+  document.getElementById('cvEMGL').style.height = '3px';
+  document.getElementById('cvEMGR').style.height = '3px';
+
+  showScreen('calibScreen');
+  runCalibPhase(0);
+}
+
+let calibRafId = null;
+let calibSampleT = 0;
+const CSAMPLE = 6;
+
+let emgRepetition = 0;
+let emgPhaseStartTime = 0;
+let emgRestTimer = 0;
+let currentEmgInstruction = '';
+
+function runCalibPhase(idx) {
+  if (idx >= CALIB_PHASES.length) { 
+    finishCalib(); 
+    return; 
+  }
+  
+  const ph = CALIB_PHASES[idx];
+  
+  for (let i = 0; i < CALIB_PHASES.length; i++) {
+    const d = document.getElementById('pd' + i);
+    if (d) d.className = 'phase-dot' + (i < idx ? ' done' : i === idx ? ' active' : '');
+  }
+  
+  document.getElementById('calibIcon').textContent = ph.icon;
+  document.getElementById('calibPhaseTitle').textContent = ph.label;
+  document.getElementById('calibRing').style.stroke = 'var(--cyan)';
+  
+  const total = ph.duration * 1000;
+  const phaseStart = performance.now();
+  calibSampleT = 0;
+  
+  if (ph.type === 'emg') {
+    emgRepetition = 0;
+    emgPhaseStartTime = phaseStart;
+    emgRestTimer = 0;
+    window.isRestPeriod = false;
+  } else if (ph.type === 'baseline') {
+    emgBaselineL = 150;
+    emgBaselineR = 150;
+    window.isRestPeriod = true;
+  } else {
+    window.isRestPeriod = false;
+  }
+  
+  function tick(now) {
+    const elapsed = now - phaseStart;
+    const frac = Math.min(1, elapsed / total);
+    const remaining = Math.max(0, Math.ceil((total - elapsed) / 1000));
+    
+    document.getElementById('calibRing').style.strokeDashoffset = 175.9 * frac;
+    document.getElementById('calibNum').textContent = remaining;
+    document.getElementById('calibProg').style.width = (frac * 100) + '%';
+    document.getElementById('calibProgLabel').textContent = `RECORDING ${ph.id.toUpperCase()} · ${Math.round(frac * 100)}%`;
+    
+    let instructionText = ph.instruction;
+    
+    if (ph.type === 'emg' && ph.repetitions) {
+      const restBefore = 5000;
+      const repDuration = (ph.holdDuration + ph.restBetween) * 1000;
+      const timeInPhase = now - emgPhaseStartTime;
+
+      if (timeInPhase < restBefore) {
+        window.isRestPeriod = true;
+        const remaining = Math.ceil((restBefore - timeInPhase) / 1000);
+        instructionText = `😌 REST — GET READY\n\n${ph.id === 'emg_left' ? 'Left' : 'Right'} arm relaxed.\nFirst flex starts in ${remaining}s...\n\nKeep both arms completely relaxed!`;
+      } else {
+        const timeAfterRest = timeInPhase - restBefore;
+        const currentRep = Math.floor(timeAfterRest / repDuration);
+
+        if (currentRep < ph.repetitions && currentRep >= 0) {
+          emgRepetition = currentRep;
+          const timeInRep = timeAfterRest % repDuration;
+          const isFlexTime = timeInRep < ph.holdDuration * 1000;
+
+          if (isFlexTime) {
+            const remainingHold = Math.ceil((ph.holdDuration * 1000 - timeInRep) / 1000);
+            instructionText = `💪 FLEX ${ph.id === 'emg_left' ? 'LEFT' : 'RIGHT'} ARM HARD!\n\nRepetition ${currentRep + 1} of ${ph.repetitions}\nHold for ${remainingHold} more seconds...\n\nMaintain maximum contraction!`;
+            window.isRestPeriod = false;
+          } else {
+            const remainingRest = Math.ceil((repDuration - timeInRep) / 1000);
+            instructionText = `😌 REST\n\nRepetition ${currentRep + 1} of ${ph.repetitions} done\nRest for ${remainingRest} seconds...\n\nRelax completely, prepare for next flex.`;
+            window.isRestPeriod = true;
+          }
+        } else if (currentRep >= ph.repetitions) {
+          instructionText = `✅ Complete! Moving to next phase...`;
+        }
+      }
+    }
+    
+    document.getElementById('calibInstruction').textContent = instructionText;
+    
+    const thetaP = bleConnected ? smoothBands.theta : (Math.random() * 0.12 + 0.08);
+    const betaP  = bleConnected ? smoothBands.beta  : (Math.random() * 0.10 + 0.06);
+    const liveTBR = thetaP / (betaP + TBR_EPSILON);
+    const lV = bleConnected ? emgEnvL : (Math.random() * 200 + 50);
+    const rV = bleConnected ? emgEnvR : (Math.random() * 200 + 50);
+    
+    document.getElementById('cvEEG').style.height  = Math.max(3, Math.min(44, thetaP * 350)) + 'px';
+    document.getElementById('cvBeta').style.height = Math.max(3, Math.min(44, betaP  * 350)) + 'px';
+    document.getElementById('cvTBR').style.height  = Math.max(3, Math.min(44, (liveTBR / 4.0) * 44)) + 'px';
+    document.getElementById('cvEMGL').style.height = Math.max(3, Math.min(44, lV / 26)) + 'px';
+    document.getElementById('cvEMGR').style.height = Math.max(3, Math.min(44, rV / 26)) + 'px';
+    
+    calibSampleT++;
+    if (calibSampleT >= CSAMPLE) {
+      calibSampleT = 0;
+      
+      const sampleTBR = bleConnected ? tbrValue
+        : (ph.id === 'focus'
+            ? 0.8 + Math.random() * 0.6
+            : 2.0 + Math.random() * 1.0);
+      
+      const warmupGuard = (now - phaseStart) > 2000;
+      
+      if (!warmupGuard) {
+      } else if (ph.id === 'emg_left') {
+        const timeInPhase = now - emgPhaseStartTime;
+        const restBefore2 = 5000;
+        const repDuration2 = (ph.holdDuration + ph.restBetween) * 1000;
+        const timeAfterRest2 = timeInPhase - restBefore2;
+        const currentRep2 = Math.floor(timeAfterRest2 / repDuration2);
+        const timeInRep2 = timeAfterRest2 % repDuration2;
+        const isFlex = timeInPhase > restBefore2 && currentRep2 < ph.repetitions && timeInRep2 < ph.holdDuration * 1000;
+        if (isFlex) calibData[ph.id].emgL.push(bleConnected ? emgEnvL : 300 + Math.random() * 600);
+        calibData[ph.id].emgR.push(0);
+        calibData[ph.id].tbr.push(sampleTBR);
+      } 
+      else if (ph.id === 'emg_right') {
+        const timeInPhase = now - emgPhaseStartTime;
+        const restBefore2 = 5000;
+        const repDuration2 = (ph.holdDuration + ph.restBetween) * 1000;
+        const timeAfterRest2 = timeInPhase - restBefore2;
+        const currentRep2 = Math.floor(timeAfterRest2 / repDuration2);
+        const timeInRep2 = timeAfterRest2 % repDuration2;
+        const isFlex = timeInPhase > restBefore2 && currentRep2 < ph.repetitions && timeInRep2 < ph.holdDuration * 1000;
+        if (isFlex) calibData[ph.id].emgR.push(bleConnected ? emgEnvR : 300 + Math.random() * 600);
+        calibData[ph.id].emgL.push(0);
+        calibData[ph.id].tbr.push(sampleTBR);
+      }
+      else {
+        calibData[ph.id].tbr.push(sampleTBR);
+        calibData[ph.id].emgL.push(bleConnected ? emgEnvL : 30 + Math.random() * 80);
+        calibData[ph.id].emgR.push(bleConnected ? emgEnvR : 30 + Math.random() * 80);
+      }
+    }
+    
+    drawStars(0.5);
+    
+    if (frac < 1) {
+      calibRafId = requestAnimationFrame(tick);
+    } else {
+      emgRepetition = 0;
+      setTimeout(() => runCalibPhase(idx + 1), 300);
+    }
+  }
+  
+  calibRafId = requestAnimationFrame(tick);
+}
+function finishCalib() {
+  computeThresholds(); updateThreshMarkers();
+  for (let i = 0; i < CALIB_PHASES.length; i++) document.getElementById('pd' + i).className = 'phase-dot done';
+  document.getElementById('calibNum').textContent = '✓';
+  document.getElementById('calibRing').style.stroke = 'var(--green)';
+  document.getElementById('calibProgLabel').textContent = 'CALIBRATION COMPLETE!';
+  document.getElementById('calibProg').style.width = '100%';
+  document.getElementById('calibIcon').textContent = '🎯';
+  document.getElementById('calibPhaseTitle').textContent = 'THRESHOLDS LOCKED!';
+  document.getElementById('calibInstruction').textContent = 'Neural signature learned!\nSignal recording will start with game.\nAdaptive thresholds active during play.';
+  document.getElementById('rBeta').textContent = 'TBR ' + thresh.tbr.toFixed(3);
+  document.getElementById('rEMGL').textContent = 'L ' + Math.round(thresh.emgL);
+  document.getElementById('rEMGR').textContent = 'R ' + Math.round(thresh.emgR);
+  document.getElementById('calibResult').classList.remove('hidden');
+  setTimeout(() => startGame(), 2200);
+}
+function startGame() {
+  if (calibRafId) {
+    cancelAnimationFrame(calibRafId);
+    calibRafId = null;
+  }
+  showScreen(null); document.getElementById('hud').classList.remove('hidden');
+  document.getElementById('gameControls').classList.remove('hidden');
+  initGame(); gameRunning = true;
+  if (bleConnected && ctrlChar) ctrlChar.writeValue(new Uint8Array([0x01])).catch(() => {});
+  gameLoop();
+}
+function restartGame() {
+  currentParticipant.trial = (currentParticipant.trial || 1) + 1;
+  document.getElementById('fTrial').value = currentParticipant.trial;
+  thresh = { ...calibThresh };
+  showScreen(null); document.getElementById('hud').classList.remove('hidden');
+  document.getElementById('gameControls').classList.remove('hidden');
+  initGame(); gameRunning = true;
+  if (bleConnected && ctrlChar) ctrlChar.writeValue(new Uint8Array([0x01])).catch(() => {});
+  gameLoop();
+}
+
+function stopGame() {
+  if (!gameRunning) return;
+  logEvent('manual_stop');
+  gameEndReason = 'stopped';
+  if (bleConnected && ctrlChar) ctrlChar.writeValue(new TextEncoder().encode('STOP')).catch(() => {});
+  showNotif('GAME STOPPED', '#ff2244');
+  endGame();
+}
+
+window.addEventListener('resize', resizeAll);
+initStars(); resizeAll();
+updateConnectionUI();
+(function bgAnim() { if (!gameRunning) drawStars(0.35); requestAnimationFrame(bgAnim); })();
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "os": "Windows-11-10.0.26200-SP0",
+  "python": "CPython 3.13.11",
+  "startedAt": "2026-04-10T17:46:48.001204Z",
+  "program": "X:\\Python Projects\\muscle_music\\train.py",
+  "codePath": "train.py",
+  "codePathLocal": "train.py",
+  "email": "rony000013@gmail.com",
+  "root": "X:\\Python Projects\\muscle_music",
+  "host": "BlackMamba",
+  "executable": "X:\\Python Projects\\muscle_music\\.venv\\Scripts\\python.exe",
+  "cpu_count": 8,
+  "cpu_count_logical": 16,
+  "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "53687091200",
+      "used": "36796583936"
+    }
+  },
+  "memory": {
+    "total": "33595191296"
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "memoryTotal": "8585740288",
+      "cudaCores": 3072,
+      "architecture": "Ada",
+      "uuid": "GPU-1143fbfc-8afa-4f86-9833-e78179050567"
+    }
+  ],
+  "cudaVersion": "13.2",
+  "writerId": "ljnqk03dav5gb5uaynqlyps19vc9a38l"
+}

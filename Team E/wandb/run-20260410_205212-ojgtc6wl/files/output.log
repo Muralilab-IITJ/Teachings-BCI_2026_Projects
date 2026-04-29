@@ -1,0 +1,55 @@
+Training on device: cuda
+
+Starting Training...
+Epoch 01/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 02/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 03/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 04/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 05/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 06/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 07/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 08/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 09/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 10/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 11/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 12/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 13/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 14/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 15/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 16/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 17/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 18/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 19/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 20/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 21/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 22/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 23/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 24/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 25/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 26/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 27/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 28/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 29/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 30/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 31/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 32/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 33/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 34/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 35/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 36/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 37/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 38/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 39/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 40/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 41/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 42/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 43/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 44/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 45/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 46/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 47/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 48/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 49/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+Epoch 50/50 | Train Acc: 0.1364 | Val Acc: 0.1364 | Val Drum Loss: nan | Val Int Loss: nan
+
+Training complete. Best model saved as 'best_emg_air_drum_model.pth'
